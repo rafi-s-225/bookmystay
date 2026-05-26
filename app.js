@@ -2,29 +2,27 @@ const express= require('express');
 const app= express();
 const mongoose = require('mongoose');
 const Listing=require("./models/listing.js");
+const Review=require("./models/review.js");
 const path= require("path")
 const methodOverride=require("method-override")
 const ejsMate=require("ejs-mate");
 const wrapAsync=require("./utils/wrapAsync.js");
 const ExpressError=require("./utils/expressError.js");
-const listingSchema=require("./schema.js")
+const {listingSchema, reviewSchema} = require("./schema.js")
 
 const MONGO_URL = "mongodb://127.0.0.1:27017/bookmystay";
 
 main()
 .then(()=>{
     console.log("connected to DB");
-})
+    })
 .catch((err)=>{
-    console.log(err)
-});
+    console.error("Database connection failed:", err);
+})
 async function main(){
-    await mongoose.connect(MONGO_URL); 
+    await mongoose.connect(MONGO_URL);
 }
 
-
-
-app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
 app.use(express.urlencoded({extended:true}))
 app.use(methodOverride("_method"));
@@ -33,9 +31,9 @@ app.use(express.static(path.join(__dirname,"/public")))
 app.use(express.json())
 
 
-app.get("/",wrapAsync((req,res)=>{
+app.get("/",(req,res)=>{
     res.send("Iam root of website")
-}))
+})
 
 const validatListing =(req,res,next)=>{
     let {error} =listingSchema.validate(req.body.listing);
@@ -47,6 +45,19 @@ const validatListing =(req,res,next)=>{
         next()
     }
 }
+
+const validateReview =(req,res,next)=>{
+    let {error} =reviewSchema.validate(req.body);
+    if(error) {
+        let errMsg = error.details.map((el)=>el.message).join(",");
+        throw new ExpressError(400,errMsg);
+    } 
+    else{
+        next()
+    }
+}
+
+
 
  app.get("/listings",wrapAsync(async (req,res,next)=>{
     let allListings= await Listing.find({})
@@ -66,7 +77,7 @@ const validatListing =(req,res,next)=>{
 
  app.get("/listings/:id",wrapAsync(async(req,res,next)=>{
     let {id} = req.params
-    let listing  = await Listing.findById(id);
+    let listing  = await Listing.findById(id).populate("reviews");
     res.render("listings/show.ejs",{listing});
  }))  
 
@@ -81,6 +92,11 @@ const validatListing =(req,res,next)=>{
         await newListing.save();
         res.redirect("/listings");
  }));
+
+
+
+
+
 app.put("/listings/:id",validatListing,wrapAsync(async (req,res,next)=>{
     let {id} = req.params
     listingSchema.validate(req.body);
@@ -93,6 +109,30 @@ app.delete("/listings/:id",wrapAsync( async (req,res,next)=>{
     await Listing.findByIdAndDelete(id)
     res.redirect("/listings")
 }))
+
+
+//Reviews
+app.post("/listings/:id/reviews",validateReview,wrapAsync(async (req,res,next)=>{
+    let {id} = req.params;
+    let listing = await Listing.findById(id);
+    if (!listing) {
+        throw new ExpressError(404, "Listing not found");
+    }
+    let newreview = new Review(req.body.review);
+    listing.reviews.push(newreview);
+    await newreview.save();
+    await listing.save();
+    // res.send("Review added successfully")
+    res.redirect(`/listings/${listing._id}`);
+}));
+
+
+app.delete("/listings/:id/reviews/:reviewId",wrapAsync(async (req,res,next)=>{
+    let {id, reviewId} = req.params;
+    await Listing.findByIdAndUpdate(id,{$pull:{reviews:reviewId}})
+    await Review.findByIdAndDelete(reviewId);
+    res.redirect(`/listings/${id}`);
+}));
 
 app.use((req,res,next)=>{
     next(new ExpressError(404,"Page not found"));
