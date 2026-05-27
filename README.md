@@ -48,20 +48,13 @@ cd bookmystay
 npm install
 ```
 
-4. Create a `.env` file and add the required environment variables
-
-```env
-ATLASDB_URL=your_mongodb_connection_string
-SECRET=your_secret_key
-```
-
-5. Start the server
+4. Start the server
 
 ```bash
 node app.js
 ```
 
-6. Open in browser
+5. Open in browser
 
 ```bash
 http://localhost:8080
