@@ -56,23 +56,29 @@
                         <button class="btn btn-dark" type="submit">Submit</button>
                     </form>
                     
-                    <h5 class="mt-5"><b>All Reviews</b></h5>
-                    <div class="row g-3">
-                        <% for(review of listing.reviews){%>
-                            <div class="col-md-6">
-                                <div class="card listing-card h-100">
-                                    <div class="card-body">
-                                        <h5 class="card-title">John Doe</h5>
-                                        <p class="card-text"><%= review.comment %></p>
-                                        <p class="card-text"><small class="text-muted">Rating: <%= review.rating %>/5</small></p>
+                    <h5 class="mb-3"><b>All Reviews</b></h5>
+                    <% if (listing.reviews && listing.reviews.length > 0) { %>
+                        <div class="row g-3 mb-5">
+                            <% for(review of listing.reviews){%>
+                                <div class="col-md-6">
+                                    <div class="card listing-card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">John Doe</h5>
+                                            <p class="card-text"><%= review.comment %></p>
+                                            <p class="card-text"><small class="text-muted">Rating: <%= review.rating %>/5</small></p>
+                                        </div>
+                                        <form class="p-3 pt-0" method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE">
+                                            <button class="btn btn-sm btn-dark">Delete</button>
+                                        </form>
                                     </div>
-                                    <form class="p-3 pt-0" method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE">
-                                        <button class="btn btn-sm btn-dark">Delete</button>
-                                    </form>
                                 </div>
-                            </div>
-                        <% } %>
-                    </div>
+                            <% } %>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-secondary mb-5" role="alert">
+                            No reviews yet. Be the first to leave one!
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div> 
